@@ -1,0 +1,139 @@
+Option Explicit
+
+Sub CrearCalendario()
+
+    Dim fechaInicio As Date
+    Dim fechaFin As Date
+    Dim fechaActual As Date
+    Dim fechaIteracion As Date
+    Dim ws As Worksheet
+    Dim calendario As Range
+    Dim actividad As Range
+    Dim actividades As Range
+    Dim actividadFecha As Range
+    Dim responsable As Range
+    Dim terminada As Range
+    Dim contadorActividades As Range
+    Dim contadorTerminadas As Range
+    Dim contadorMes As Range
+    Dim fila As Integer
+    Dim columna As Integer
+    
+    ' Definir fecha de inicio y fecha de fin del calendario
+    fechaInicio = DateSerial(2023, 1, 1)
+    fechaFin = DateSerial(2023, 12, 31)
+    
+    ' Configurar hoja de cálculo y rangos de datos
+    Set ws = ThisWorkbook.Sheets("Sheet1") ' Cambia "Sheet1" al nombre de tu hoja de cálculo
+    Set calendario = ws.Range("B3:M8") ' Cambia el rango según tus necesidades
+    Set actividades = ws.Range("A12:A100") ' Cambia el rango según tus necesidades
+    Set actividadFecha = ws.Range("B12:B100") ' Cambia el rango según tus necesidades
+    Set responsable = ws.Range("C12:C100") ' Cambia el rango según tus necesidades
+    Set terminada = ws.Range("D12:D100") ' Cambia el rango según tus necesidades
+    Set contadorActividades = ws.Range("F3") ' Cambia el rango según tus necesidades
+    Set contadorTerminadas = ws.Range("F4") ' Cambia el rango según tus necesidades
+    Set contadorMes = ws.Range("F5") ' Cambia el rango según tus necesidades
+    
+    ' Limpiar el calendario
+    calendario.ClearContents
+    calendario.Interior.Color = RGB(255, 255, 255) ' Color de fondo blanco
+    
+    ' Limpiar la lista de actividades y los contadores
+    actividades.ClearContents
+    actividadFecha.ClearContents
+    responsable.ClearContents
+    terminada.ClearContents
+    contadorActividades.Value = 0
+    contadorTerminadas.Value = 0
+    contadorMes.Value = 0
+    
+    ' Inicializar variables de fila y columna
+    fila = 1
+    columna = 1
+    
+    ' Iterar por cada día en el rango de fechas
+    For fechaActual = fechaInicio To fechaFin
+        
+        ' Establecer la fecha de iteración en la celda correspondiente del calendario
+        calendario.Cells(fila, columna).Value = fechaActual
+        
+        ' Comprobar si la fecha actual es festiva
+        If EsFestivo(fechaActual) Then
+            calendario.Cells(fila, columna).Interior.Color = RGB(255, 0, 0) ' Color de fondo rojo
+        End If
+        
+        ' Verificar si hay actividades programadas para la fecha actual
+        For Each actividad In actividades
+            If actividad.Value <> "" And actividadFecha.Value = fechaActual Then
+                ' Escribir la actividad en la lista de actividades
+                ws.Cells(actividad.Row, 7).Value = actividad.Value
+                
+                ' Establecer el responsable de la actividad
+                ws.Cells(actividad.Row, 8).Value = responsable.Value
+                
+                ' Establecer el estado de la actividad
+                ws.Cells(actividad.Row, 9).Value = "En marcha"
+                
+                ' Establecer el rango de fechas de la actividad
+                ws.Cells(actividad.Row, 10).Value = fechaActual
+                
+                ' Verificar si la actividad está terminada
+                If terminada.Value = "Terminada" Then
+                    ws.Cells(actividad.Row, 9).Value = "Terminada"
+                    ws.Cells(actividad.Row, 11).Value = fechaActual
+                End If
+                
+                ' Actualizar contador de actividades
+                contadorActividades.Value = contadorActividades.Value + 1
+                
+                ' Actualizar contador de actividades terminadas
+                If ws.Cells(actividad.Row, 9).Value = "Terminada" Then
+                    contadorTerminadas.Value = contadorTerminadas.Value + 1
+                End If
+            End If
+        Next actividad
+        
+        ' Avanzar a la siguiente columna del calendario
+        columna = columna + 1
+        
+        ' Verificar si se alcanzó el final de la semana (sábado)
+        If columna > 13 Then
+            ' Reiniciar columna y avanzar a la siguiente fila
+            columna = 1
+            fila = fila + 1
+        End If
+        
+    Next fechaActual
+    
+    ' Verificar si todas las actividades están terminadas
+    If contadorActividades.Value = contadorTerminadas.Value Then
+        contadorActividades.Interior.Color = RGB(0, 255, 0) ' Color de fondo verde
+        contadorTerminadas.Interior.Color = RGB(0, 255, 0) ' Color de fondo verde
+    Else
+        contadorActividades.Interior.Color = RGB(255, 255, 0) ' Color de fondo amarillo
+        contadorTerminadas.Interior.Color = RGB(255, 255, 0) ' Color de fondo amarillo
+    End If
+    
+    ' Actualizar contador de actividades por persona en el mes
+    contadorMes.Value = Application.WorksheetFunction.CountIfs(responsable, "Nombre de la persona", actividadFecha, ">=" & fechaInicio, actividadFecha, "<=" & fechaFin)
+    
+    ' Ajustar ancho de columnas
+    ws.Columns("A:K").AutoFit
+    
+    MsgBox "Calendario creado correctamente."
+    
+End Sub
+
+Function EsFestivo(fecha As Date) As Boolean
+
+    ' Aquí puedes agregar la lógica para verificar si una fecha es festiva
+    ' Por ejemplo, podrías tener una lista de fechas festivas y verificar si la fecha está en esa lista
+    
+    ' En este ejemplo, asumiremos que solo los sábados y domingos son festivos
+    If Weekday(fecha, vbSunday) = 1 Or Weekday(fecha, vbSunday) = 7 Then
+        EsFestivo = True
+    Else
+        EsFestivo = False
+    End If
+    
+End Function
